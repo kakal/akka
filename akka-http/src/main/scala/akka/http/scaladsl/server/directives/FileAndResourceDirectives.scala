@@ -128,13 +128,18 @@ trait FileAndResourceDirectives {
    * @group fileandresource
    */
   def getFromDirectory(directoryName: String)(implicit resolver: ContentTypeResolver): Route = {
-    val base = withTrailingSlash(directoryName)
-    extractUnmatchedPath { path ⇒
+    val base = new File(withTrailingSlash(directoryName))
+    val canonicalBase = base.getCanonicalPath
+    extractUnmatchedPath { unmatchedPath ⇒
       extractLog { log ⇒
-        fileSystemPath(base, path, log) match {
-          case ""       ⇒ reject
-          case fileName ⇒ getFromFile(fileName)
-        }
+        val pathString = (if (unmatchedPath.startsWithSlash) unmatchedPath.tail else unmatchedPath).toString
+        val file = new File(base, pathString)
+        if (!file.exists()) reject
+        else if (!file.getCanonicalPath.startsWith(canonicalBase)) {
+          log.warning(s"[$pathString] points to a location that is not part of [$base]")
+          reject
+        } else
+          getFromFile(file)
       }
     }
   }
