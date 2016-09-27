@@ -33,6 +33,7 @@ private[akka] class InboundQuarantineCheck(inboundContext: InboundContext) exten
       // InHandler
       override def onPush(): Unit = {
         val env = grab(in)
+        log.debug("InboundQuarantineCheck got message [{}]", env.message)
         env.association match {
           case OptionVal.None ⇒
             // unknown, handshake not completed
